@@ -28,7 +28,7 @@ const codeSample = `import { GameLoadingSplash } from "@/components/playful-load
 
 export default function Home() {
   const [game, setGame] = useState<LoaderGame>("snake");
-  const [tone, setTone] = useState<LoaderTone>("paper");
+  const [tone, setTone] = useState<LoaderTone>("ink");
   const [showStatus, setShowStatus] = useState(true);
   const [copied, setCopied] = useState(false);
   const [splashRevision, setSplashRevision] = useState(0);
@@ -43,6 +43,12 @@ export default function Home() {
   };
 
   return (
+    <GameLoadingSplash
+      key={splashRevision}
+      game={game}
+      tone={tone}
+      readyAfterMs={3800}
+    >
     <Tooltip.Provider delayDuration={180}>
       <div className="site-shell">
         <header className="site-header">
@@ -76,7 +82,7 @@ export default function Home() {
                 {(["paper", "ink"] as LoaderTone[]).map((option) => <button key={option} type="button" data-active={tone === option} onClick={() => setTone(option)}>{option}</button>)}
               </div></div>
               <div className="control-row"><span>status</span><Switch.Root className="switch-root" checked={showStatus} onCheckedChange={setShowStatus} aria-label="Show loader status"><Switch.Thumb className="switch-thumb" /></Switch.Root></div>
-              <div className="control-row"><span>transition</span><button type="button" className="replay-button" onClick={() => setSplashRevision((value) => value + 1)}><RotateCcw size={13} />Replay</button></div>
+              <div className="control-row"><span>transition</span><button type="button" className="replay-button" onClick={() => setSplashRevision((value) => value + 1)}><RotateCcw size={13} />Replay full screen</button></div>
               <div className="rail-heading rail-heading--tokens"><Layers3 size={16} /><span>Active tokens</span></div>
               <div className="active-tokens">
                 <div><i style={{ background: "var(--pl-blue-9)" }} /><span>accent</span><code>blue.9</code></div>
@@ -119,5 +125,6 @@ export default function Home() {
         <footer className="site-footer"><span>Playful Loaders</span><span>React · Radix UI · Inter</span><a href="#top">Back to top ↑</a></footer>
       </div>
     </Tooltip.Provider>
+    </GameLoadingSplash>
   );
 }

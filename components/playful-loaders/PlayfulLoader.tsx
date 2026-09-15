@@ -77,7 +77,7 @@ function pixel(
     PADDING + point.y * (CELL + GAP) + inset,
     size,
     size,
-    Math.max(2, size * 0.18),
+    Math.max(2, size * 0.16),
   );
   context.fill();
 }
@@ -407,7 +407,7 @@ export function GameLoadingSplash({
   children,
   game = "snake",
   tone = "paper",
-  accent = "#146ef5",
+  accent = "#0090ff",
   active = true,
   showStatus = true,
   fullscreen = true,
