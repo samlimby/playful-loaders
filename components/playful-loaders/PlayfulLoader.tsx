@@ -18,6 +18,7 @@ export type PlayfulLoaderProps = {
 export type GameLoadingSplashProps = PlayfulLoaderProps & {
   children?: React.ReactNode;
   fullscreen?: boolean;
+  previewViewport?: { width: number; height: number };
   ready?: boolean;
   readyAfterMs?: number;
   onDismiss?: () => void;
@@ -439,6 +440,7 @@ export function GameLoadingSplash({
   active = true,
   showStatus = true,
   fullscreen = true,
+  previewViewport,
   ready: controlledReady,
   readyAfterMs = 4500,
   onScoreChange,
@@ -450,6 +452,14 @@ export function GameLoadingSplash({
   const [score, setScore] = useState(0);
   const Game = GAME_COMPONENTS[game];
   const ready = controlledReady ?? autoReady;
+  const previewGridSize = previewViewport
+    ? Math.min(
+        SIZE,
+        previewViewport.width - (previewViewport.width <= 620 ? 24 : 32),
+        previewViewport.height - (previewViewport.width <= 620 ? 120 : 136),
+      )
+    : undefined;
+  const mode = previewViewport ? "viewport" : fullscreen ? "fullscreen" : "contained";
 
   const updateScore = useCallback((value: number) => {
     setScore(value);
@@ -486,8 +496,16 @@ export function GameLoadingSplash({
       data-state={phase}
       data-game={game}
       data-tone={tone}
-      data-mode={fullscreen ? "fullscreen" : "contained"}
-      style={{ "--pl-accent": accent } as React.CSSProperties}
+      data-mode={mode}
+      data-viewport-size={previewViewport && previewViewport.width <= 620 ? "mobile" : undefined}
+      style={{
+        "--pl-accent": accent,
+        ...(previewViewport ? {
+          "--pl-preview-width": `${previewViewport.width}px`,
+          "--pl-preview-height": `${previewViewport.height}px`,
+          "--pl-grid-size": `${previewGridSize}px`,
+        } : {}),
+      } as React.CSSProperties}
       role="region"
       aria-label={`${GAME_LABELS[game]} loading splash`}
       aria-busy={!ready}

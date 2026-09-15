@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check, Clipboard, Code2, Layers3, RotateCcw, SlidersHorizontal } from "lucide-react";
 import { Switch, Tabs, Tooltip } from "radix-ui";
 import { GameLoadingSplash, type LoaderGame, type LoaderTone } from "@/components/playful-loaders";
@@ -17,6 +17,78 @@ const palette = [
   ["Violet", "#6550B9"], ["Ruby", "#E5484D"], ["Green", "#16A36A"],
 ];
 
+const breakpoints = [
+  { value: "mobile", label: "Mobile", width: 390, height: 844 },
+  { value: "tablet", label: "Tablet", width: 768, height: 1024 },
+  { value: "laptop", label: "Laptop", width: 1280, height: 800 },
+  { value: "desktop", label: "Desktop", width: 1536, height: 1003 },
+] as const;
+
+type Breakpoint = (typeof breakpoints)[number];
+
+function BreakpointViewport({ viewport, game, tone, showStatus }: {
+  viewport: Breakpoint;
+  game: LoaderGame;
+  tone: LoaderTone;
+  showStatus: boolean;
+}) {
+  const frameRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+  const mobile = viewport.width <= 620;
+  const playArea = Math.min(768, viewport.width - (mobile ? 24 : 32), viewport.height - (mobile ? 120 : 136));
+  const cell = playArea * 42.9312 / 768;
+  const gap = playArea * 13.2096 / 768;
+
+  useEffect(() => {
+    const frame = frameRef.current;
+    if (!frame) return;
+    const updateScale = () => setScale(Math.min(1, frame.clientWidth / viewport.width));
+    updateScale();
+    const observer = new ResizeObserver(updateScale);
+    observer.observe(frame);
+    return () => observer.disconnect();
+  }, [viewport.width]);
+
+  return (
+    <div className="breakpoint-preview">
+      <div className="breakpoint-preview__meta">
+        <div><span>{viewport.label}</span><strong>{viewport.width} × {viewport.height}</strong></div>
+        <dl>
+          <div><dt>Play area</dt><dd>{Math.round(playArea)}px</dd></div>
+          <div><dt>Block</dt><dd>{cell.toFixed(1)}px</dd></div>
+          <div><dt>Gap</dt><dd>{gap.toFixed(1)}px</dd></div>
+        </dl>
+      </div>
+      <div className="breakpoint-preview__stage">
+        <div
+          ref={frameRef}
+          className="breakpoint-preview__frame"
+          style={{ maxWidth: viewport.width, height: viewport.height * scale }}
+        >
+          <div
+            className="breakpoint-preview__viewport"
+            style={{
+              width: viewport.width,
+              height: viewport.height,
+              transform: `scale(${scale})`,
+            }}
+          >
+            <GameLoadingSplash
+              game={game}
+              tone={tone}
+              active={false}
+              showStatus={showStatus}
+              fullscreen={false}
+              previewViewport={{ width: viewport.width, height: viewport.height }}
+              ready
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const codeSample = `import { GameLoadingSplash } from "@/components/playful-loaders";
 
 <GameLoadingSplash
@@ -32,6 +104,7 @@ export default function Home() {
   const [showStatus, setShowStatus] = useState(true);
   const [copied, setCopied] = useState(false);
   const [splashRevision, setSplashRevision] = useState(0);
+  const [breakpoint, setBreakpoint] = useState("desktop");
 
   const displayedCode = codeSample
     .replace('game="snake"', `game="${game}"`)
@@ -57,7 +130,7 @@ export default function Home() {
             <span>Playful Loaders</span>
           </a>
           <nav aria-label="Primary navigation">
-            <a href="#specimens">Specimens</a><a href="#tokens">Tokens</a><a href="#usage">Usage</a>
+            <a href="#specimens">Specimens</a><a href="#responsive">Responsive</a><a href="#tokens">Tokens</a><a href="#usage">Usage</a>
           </nav>
           <span className="version-badge">v0.1</span>
         </header>
@@ -102,6 +175,27 @@ export default function Home() {
                 <button type="button" onClick={() => { setGame(item.value); document.querySelector("#specimens")?.scrollIntoView({ behavior: "smooth" }); }}>Open specimen <span aria-hidden="true">↗</span></button>
               </article>)}
             </div>
+          </section>
+
+          <section className="responsive-section" id="responsive" aria-labelledby="responsive-title">
+            <div className="section-heading section-heading--responsive">
+              <div><p className="eyebrow">Full loading screen</p><h2 id="responsive-title">One splash.<br />Every viewport.</h2></div>
+              <p>The complete loading screen is rendered at the selected device size, then scaled to fit this page. Its 12 × 12 field keeps the portfolio’s exact 7% padding and 2% gap geometry.</p>
+            </div>
+            <Tabs.Root className="breakpoint-tabs" value={breakpoint} onValueChange={setBreakpoint}>
+              <Tabs.List className="breakpoint-tabs__list" aria-label="Preview loading screen at a breakpoint">
+                {breakpoints.map((item) => (
+                  <Tabs.Trigger key={item.value} value={item.value}>
+                    <span>{item.label}</span><small>{item.width} × {item.height}</small>
+                  </Tabs.Trigger>
+                ))}
+              </Tabs.List>
+              {breakpoints.map((item) => (
+                <Tabs.Content key={item.value} value={item.value} className="breakpoint-tabs__content">
+                  <BreakpointViewport viewport={item} game={game} tone={tone} showStatus={showStatus} />
+                </Tabs.Content>
+              ))}
+            </Tabs.Root>
           </section>
 
           <section className="tokens-section" id="tokens" aria-labelledby="tokens-title">
