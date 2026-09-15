@@ -247,8 +247,8 @@ h2 { margin: 0; font-size: clamp(40px, 5.5vw, 76px); line-height: .98; letter-sp
 .breakpoint-preview__meta dl div { display: flex; flex-direction: column; gap: 4px; }
 .breakpoint-preview__meta dt { color: var(--pl-sand-11); font-size: 11px; }
 .breakpoint-preview__meta dd { margin: 0; font: 700 13px/1.2 "Inter", sans-serif; font-variant-numeric: tabular-nums; }
-.breakpoint-preview__stage { padding: clamp(16px, 3.5vw, 48px); background: #e8e8e5; overflow: hidden; }
-.breakpoint-preview__frame { position: relative; width: 100%; margin-inline: auto; overflow: hidden; border: 1px solid rgb(17 17 17 / 14%); border-radius: 12px; background: #111927; box-shadow: 0 18px 55px rgb(17 17 17 / 18%); transition: height 260ms cubic-bezier(.2,0,0,1); }
+.breakpoint-preview__stage { min-width: 0; padding: clamp(16px, 3.5vw, 48px); background: #e8e8e5; overflow: hidden; }
+.breakpoint-preview__frame { position: relative; width: 100%; min-width: 0; overflow: hidden; border: 1px solid rgb(17 17 17 / 14%); border-radius: 12px; background: #111927; box-shadow: 0 18px 55px rgb(17 17 17 / 18%); transition: height 260ms cubic-bezier(.2,0,0,1); }
 .breakpoint-preview__viewport { position: absolute; top: 0; left: 0; transform-origin: top left; pointer-events: none; }
 
 .tokens-section { background: var(--pl-ink); color: white; }

@@ -42,7 +42,7 @@ function BreakpointViewport({ viewport, game, tone, showStatus }: {
   useEffect(() => {
     const frame = frameRef.current;
     if (!frame) return;
-    const updateScale = () => setScale(Math.min(1, frame.clientWidth / viewport.width));
+    const updateScale = () => setScale(frame.clientWidth / viewport.width);
     updateScale();
     const observer = new ResizeObserver(updateScale);
     observer.observe(frame);
@@ -63,7 +63,7 @@ function BreakpointViewport({ viewport, game, tone, showStatus }: {
         <div
           ref={frameRef}
           className="breakpoint-preview__frame"
-          style={{ maxWidth: viewport.width, height: viewport.height * scale }}
+          style={{ height: viewport.height * scale }}
         >
           <div
             className="breakpoint-preview__viewport"
