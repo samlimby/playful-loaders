@@ -126,7 +126,7 @@ export default function Home() {
       <div className="site-shell">
         <header className="site-header">
           <a className="wordmark" href="#top" aria-label="Playful Loaders home">
-            <img className="wordmark-mark" src="/logo.svg" alt="" aria-hidden="true" />
+            <img className="wordmark-mark" src="/brand-mark.png" alt="" aria-hidden="true" />
             <span>Playful Loaders</span>
           </a>
           <nav aria-label="Primary navigation">

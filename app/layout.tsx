@@ -5,8 +5,8 @@ export const metadata: Metadata = {
   title: "Playful Loaders — React game loading states",
   description: "Four playful, accessible React loading components: Snake, Tetris, Pong, and Space Invaders.",
   icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
+    icon: "/brand-mark.png",
+    shortcut: "/brand-mark.png",
   },
 };
 
