@@ -15,6 +15,14 @@ export type PlayfulLoaderProps = {
   onScoreChange?: (score: number) => void;
 };
 
+export type GameLoadingSplashProps = PlayfulLoaderProps & {
+  children?: React.ReactNode;
+  fullscreen?: boolean;
+  ready?: boolean;
+  readyAfterMs?: number;
+  onDismiss?: () => void;
+};
+
 type Point = { x: number; y: number };
 type GameCanvasProps = {
   active: boolean;
@@ -41,6 +49,16 @@ const GAME_HELP: Record<LoaderGame, string> = {
   pong: "Up/down or W/S to move",
   "space-invaders": "Left/right to move · Space to fire",
 };
+
+const RESOLUTION_CELLS = Array.from({ length: GRID ** 2 }, (_, index) => {
+  const x = index % GRID;
+  const y = Math.floor(index / GRID);
+  return {
+    index,
+    delay: (Math.abs(x - 5.5) + Math.abs(y - 5.5) - 12) * 0.055,
+    tone: Math.min(100, (28 + ((x * 13 + y * 9) % 34)) * 1.38),
+  };
+});
 
 function pixel(
   context: CanvasRenderingContext2D,
@@ -335,6 +353,147 @@ function InvadersCanvas({ active, accent, onScoreChange }: GameCanvasProps) {
   return <canvas ref={canvasRef} className="pl-canvas" role="img" aria-label="Interactive Space Invaders loader" />;
 }
 
+const GAME_COMPONENTS = {
+  snake: SnakeCanvas,
+  tetris: TetrisCanvas,
+  pong: PongCanvas,
+  "space-invaders": InvadersCanvas,
+};
+
+function ResolutionField({ paused, intro }: { paused: boolean; intro: boolean }) {
+  return (
+    <div className="pl-splash__resolution" data-paused={paused} aria-hidden="true">
+      {RESOLUTION_CELLS.map(({ delay, index, tone }) => (
+        <i
+          key={index}
+          style={{
+            "--pl-cell-delay": `${delay}s`,
+            "--pl-cell-tone": `${Math.min(100, tone * (intro ? 1.5 : 1))}%`,
+          } as React.CSSProperties}
+        />
+      ))}
+    </div>
+  );
+}
+
+function LoadingSpinner() {
+  return (
+    <svg className="pl-splash__spinner" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+      <circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeDasharray="50.27" strokeDashoffset="14" />
+    </svg>
+  );
+}
+
+function ArrowIcon() {
+  return (
+    <svg className="pl-splash__arrow" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+      <path d="M5 15 15 5M8 5h7v7" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function InfoIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+      <circle cx="8" cy="8" r="6.25" fill="none" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M8 7.2v4M8 4.7v.1" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function GameLoadingSplash({
+  children,
+  game = "snake",
+  tone = "paper",
+  accent = "#146ef5",
+  active = true,
+  showStatus = true,
+  fullscreen = true,
+  ready: controlledReady,
+  readyAfterMs = 4500,
+  onScoreChange,
+  onDismiss,
+}: GameLoadingSplashProps) {
+  const [phase, setPhase] = useState<"loading" | "leaving" | "done">("loading");
+  const [introComplete, setIntroComplete] = useState(false);
+  const [autoReady, setAutoReady] = useState(false);
+  const [score, setScore] = useState(0);
+  const Game = GAME_COMPONENTS[game];
+  const ready = controlledReady ?? autoReady;
+
+  const updateScore = useCallback((value: number) => {
+    setScore(value);
+    onScoreChange?.(value);
+  }, [onScoreChange]);
+
+  useEffect(() => {
+    const introTimer = window.setTimeout(() => setIntroComplete(true), 800);
+    const readyTimer = readyAfterMs >= 0
+      ? window.setTimeout(() => setAutoReady(true), Math.max(800, readyAfterMs))
+      : undefined;
+    return () => {
+      window.clearTimeout(introTimer);
+      if (readyTimer) window.clearTimeout(readyTimer);
+    };
+  }, [readyAfterMs]);
+
+  useEffect(() => {
+    if (phase !== "leaving") return;
+    const timer = window.setTimeout(() => {
+      setPhase("done");
+      onDismiss?.();
+    }, 220);
+    return () => window.clearTimeout(timer);
+  }, [onDismiss, phase]);
+
+  if (phase === "done") return children ? <>{children}</> : null;
+
+  return (
+    <>
+    {children && <div className="pl-splash__content" aria-hidden="true" inert>{children}</div>}
+    <section
+      className="pl-splash"
+      data-state={phase}
+      data-game={game}
+      data-tone={tone}
+      data-mode={fullscreen ? "fullscreen" : "contained"}
+      style={{ "--pl-accent": accent } as React.CSSProperties}
+      role="region"
+      aria-label={`${GAME_LABELS[game]} loading splash`}
+      aria-busy={!ready}
+    >
+      {showStatus && (
+        <>
+          <div className="pl-splash__score" aria-live="polite"><span>Score:</span><strong>{score}</strong></div>
+          <button
+            type="button"
+            className="pl-splash__status"
+            data-ready={ready}
+            disabled={!ready}
+            onClick={() => setPhase("leaving")}
+            aria-label={ready ? "View page" : "Loading page"}
+          >
+            <span className="pl-splash__status-label" aria-hidden="true"><span>Loading</span><span>View page</span></span>
+            <span className="pl-splash__status-icon" aria-hidden="true"><span><LoadingSpinner /></span><span><ArrowIcon /></span></span>
+          </button>
+        </>
+      )}
+
+      <div className="pl-splash__game">
+        <ResolutionField paused={phase !== "loading"} intro={!introComplete} />
+        <div className="pl-splash__game-canvas" data-visible={introComplete}>
+          {introComplete && <Game active={active && phase === "loading"} accent={accent} onScoreChange={updateScore} />}
+        </div>
+        {ready && showStatus && (
+          <div className="pl-splash__ready" role="status"><InfoIcon /><span>The page is ready to view, but play for as long as you want!</span></div>
+        )}
+      </div>
+      <p className="sr-only">{GAME_HELP[game]}</p>
+    </section>
+    </>
+  );
+}
+
 export function PlayfulLoader({
   game = "snake",
   tone = "paper",
@@ -349,12 +508,7 @@ export function PlayfulLoader({
     setScore(value);
     onScoreChange?.(value);
   }, [onScoreChange]);
-  const Game = useMemo(() => ({
-    snake: SnakeCanvas,
-    tetris: TetrisCanvas,
-    pong: PongCanvas,
-    "space-invaders": InvadersCanvas,
-  })[game], [game]);
+  const Game = useMemo(() => GAME_COMPONENTS[game], [game]);
 
   return (
     <section className="pl-loader" data-tone={tone} style={{ "--pl-accent": accent } as React.CSSProperties}>
@@ -390,4 +544,3 @@ export function PongLoader(props: Omit<PlayfulLoaderProps, "game">) {
 export function SpaceInvadersLoader(props: Omit<PlayfulLoaderProps, "game">) {
   return <PlayfulLoader {...props} game="space-invaders" />;
 }
-

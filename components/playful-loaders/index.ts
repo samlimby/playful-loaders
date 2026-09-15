@@ -1,5 +1,6 @@
 export {
   PlayfulLoader,
+  GameLoadingSplash,
   SnakeLoader,
   TetrisLoader,
   PongLoader,
@@ -7,5 +8,5 @@ export {
   type LoaderGame,
   type LoaderTone,
   type PlayfulLoaderProps,
+  type GameLoadingSplashProps,
 } from "./PlayfulLoader";
-

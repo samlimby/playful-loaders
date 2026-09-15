@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Clipboard, Code2, Layers3, SlidersHorizontal } from "lucide-react";
+import { Check, Clipboard, Code2, Layers3, RotateCcw, SlidersHorizontal } from "lucide-react";
 import { Switch, Tabs, Tooltip } from "radix-ui";
-import { PlayfulLoader, type LoaderGame, type LoaderTone } from "@/components/playful-loaders";
+import { GameLoadingSplash, type LoaderGame, type LoaderTone } from "@/components/playful-loaders";
 
 const games: Array<{ value: LoaderGame; label: string; short: string }> = [
   { value: "snake", label: "Snake", short: "01" },
@@ -17,12 +17,13 @@ const palette = [
   ["Violet", "#6550B9"], ["Ruby", "#E5484D"], ["Green", "#16A36A"],
 ];
 
-const codeSample = `import { PlayfulLoader } from "@/components/playful-loaders";
+const codeSample = `import { GameLoadingSplash } from "@/components/playful-loaders";
 
-<PlayfulLoader
+<GameLoadingSplash
   game="snake"
   tone="paper"
-  accent="#146EF5"
+  readyAfterMs={4500}
+  onDismiss={() => showPage()}
 />`;
 
 export default function Home() {
@@ -30,6 +31,7 @@ export default function Home() {
   const [tone, setTone] = useState<LoaderTone>("paper");
   const [showStatus, setShowStatus] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [splashRevision, setSplashRevision] = useState(0);
 
   const displayedCode = codeSample
     .replace('game="snake"', `game="${game}"`)
@@ -57,7 +59,7 @@ export default function Home() {
         <main id="top">
           <section className="intro" aria-labelledby="page-title">
             <div><p className="eyebrow">A tiny React arcade for the in-between</p><h1 id="page-title">Waiting has<br />a score.</h1></div>
-            <p className="intro-copy">Four loading states pulled from a personal portfolio, rebuilt as accessible, shareable React components. Pick a game and use your keyboard.</p>
+            <p className="intro-copy">The complete portfolio loading experience—shimmer field, game, score, ready state, and exit transition—packaged as one shareable React component.</p>
           </section>
 
           <section className="workbench" id="specimens" aria-label="Interactive loader workbench">
@@ -65,7 +67,7 @@ export default function Home() {
               <Tabs.List className="game-tabs__list" aria-label="Choose a loading game">
                 {games.map((item) => <Tabs.Trigger className="game-tabs__trigger" value={item.value} key={item.value}><span>{item.short}</span>{item.label}</Tabs.Trigger>)}
               </Tabs.List>
-              {games.map((item) => <Tabs.Content value={item.value} key={item.value} className="game-tabs__content"><PlayfulLoader game={item.value} tone={tone} showStatus={showStatus} /></Tabs.Content>)}
+              {games.map((item) => <Tabs.Content value={item.value} key={item.value} className="game-tabs__content"><GameLoadingSplash key={`${item.value}-${splashRevision}`} game={item.value} tone={tone} showStatus={showStatus} fullscreen={false} readyAfterMs={3800} onDismiss={() => window.setTimeout(() => setSplashRevision((value) => value + 1), 420)} /></Tabs.Content>)}
             </Tabs.Root>
 
             <aside className="control-rail" aria-label="Component controls">
@@ -74,6 +76,7 @@ export default function Home() {
                 {(["paper", "ink"] as LoaderTone[]).map((option) => <button key={option} type="button" data-active={tone === option} onClick={() => setTone(option)}>{option}</button>)}
               </div></div>
               <div className="control-row"><span>status</span><Switch.Root className="switch-root" checked={showStatus} onCheckedChange={setShowStatus} aria-label="Show loader status"><Switch.Thumb className="switch-thumb" /></Switch.Root></div>
+              <div className="control-row"><span>transition</span><button type="button" className="replay-button" onClick={() => setSplashRevision((value) => value + 1)}><RotateCcw size={13} />Replay</button></div>
               <div className="rail-heading rail-heading--tokens"><Layers3 size={16} /><span>Active tokens</span></div>
               <div className="active-tokens">
                 <div><i style={{ background: "var(--pl-blue-9)" }} /><span>accent</span><code>blue.9</code></div>
@@ -89,7 +92,7 @@ export default function Home() {
             <div className="specimen-grid">
               {games.map((item) => <article className="specimen-card" key={item.value}>
                 <div className="specimen-meta"><span>{item.short}</span><h3>{item.label}</h3></div>
-                <PlayfulLoader game={item.value} active={false} showStatus={false} />
+                <GameLoadingSplash game={item.value} active={false} showStatus={false} fullscreen={false} readyAfterMs={-1} />
                 <button type="button" onClick={() => { setGame(item.value); document.querySelector("#specimens")?.scrollIntoView({ behavior: "smooth" }); }}>Open specimen <span aria-hidden="true">↗</span></button>
               </article>)}
             </div>
