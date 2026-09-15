@@ -67,9 +67,12 @@ function pixel(
   point: Point,
   color: string,
   scale = 1,
+  reveal = 1,
 ) {
-  const size = CELL * scale;
+  const revealScale = 0.25 + 0.75 * reveal;
+  const size = CELL * scale * revealScale;
   const inset = (CELL - size) / 2;
+  context.globalAlpha = reveal;
   context.fillStyle = color;
   context.beginPath();
   context.roundRect(
@@ -80,6 +83,30 @@ function pixel(
     Math.max(2, size * 0.16),
   );
   context.fill();
+}
+
+function useGameReveal() {
+  const [reveal, setReveal] = useState(0);
+
+  useEffect(() => {
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (reducedMotion.matches) {
+      setReveal(1);
+      return;
+    }
+
+    const startedAt = performance.now();
+    let frame = 0;
+    const revealBlocks = (now: number) => {
+      const progress = Math.min(1, (now - startedAt) / 250);
+      setReveal(1 - (1 - progress) ** 3);
+      if (progress < 1) frame = window.requestAnimationFrame(revealBlocks);
+    };
+    frame = window.requestAnimationFrame(revealBlocks);
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
+  return reveal;
 }
 
 function prepareCanvas(canvas: HTMLCanvasElement) {
@@ -110,13 +137,10 @@ function useWindowKeys(
 
 function SnakeCanvas({ active, accent, onScoreChange }: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const reveal = useGameReveal();
   const direction = useRef<Point>({ x: 1, y: 0 });
-  const [snake, setSnake] = useState<Point[]>([
-    { x: 5, y: 6 },
-    { x: 4, y: 6 },
-    { x: 3, y: 6 },
-  ]);
-  const [food, setFood] = useState<Point>({ x: 9, y: 6 });
+  const [snake, setSnake] = useState<Point[]>([{ x: 2, y: 8 }]);
+  const [food, setFood] = useState<Point>({ x: 8, y: 4 });
   const [score, setScore] = useState(0);
 
   const handleKey = useCallback((event: KeyboardEvent) => {
@@ -141,34 +165,35 @@ function SnakeCanvas({ active, accent, onScoreChange }: GameCanvasProps) {
       setSnake((current) => {
         const head = current[0];
         const next = {
-          x: (head.x + direction.current.x + GRID) % GRID,
-          y: (head.y + direction.current.y + GRID) % GRID,
+          x: head.x + direction.current.x,
+          y: head.y + direction.current.y,
         };
-        const hit = current.some((part) => part.x === next.x && part.y === next.y);
+        const hit = next.x < 0 || next.x >= GRID || next.y < 0 || next.y >= GRID
+          || current.slice(0, -1).some((part) => part.x === next.x && part.y === next.y);
         if (hit) {
           setScore(0);
-          setFood({ x: 9, y: 6 });
+          setFood({ x: 8, y: 4 });
           direction.current = { x: 1, y: 0 };
-          return [{ x: 5, y: 6 }, { x: 4, y: 6 }, { x: 3, y: 6 }];
+          return [{ x: 2, y: 8 }];
         }
         const ate = next.x === food.x && next.y === food.y;
         if (ate) {
-          setScore((value) => value + 10);
+          setScore((value) => value + 1);
           setFood({ x: (food.x + 5) % GRID, y: (food.y + 7) % GRID });
         }
         return [next, ...current].slice(0, ate ? current.length + 1 : current.length);
       });
-    }, 145);
+    }, Math.max(150, Math.round(375 * 0.93 ** score)));
     return () => window.clearInterval(timer);
-  }, [active, food]);
+  }, [active, food, score]);
 
   useEffect(() => onScoreChange(score), [onScoreChange, score]);
   useEffect(() => {
     const context = canvasRef.current && prepareCanvas(canvasRef.current);
     if (!context) return;
-    snake.forEach((part, index) => pixel(context, part, accent, index ? 0.9 : 1));
-    pixel(context, food, "#16a36a", 0.68);
-  }, [accent, food, snake]);
+    snake.forEach((part) => pixel(context, part, accent, 1, reveal));
+    pixel(context, food, accent, 1, reveal);
+  }, [accent, food, reveal, snake]);
 
   return <canvas ref={canvasRef} className="pl-canvas" role="img" aria-label="Interactive Snake loader" />;
 }
@@ -182,6 +207,7 @@ const PIECE_COLORS = ["#146ef5", "#6550b9", "#e5484d", "#12a594"];
 
 function TetrisCanvas({ active, onScoreChange }: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const reveal = useGameReveal();
   const [settled, setSettled] = useState<Array<Point & { color: string }>>([
     { x: 4, y: 11, color: "#12a594" }, { x: 5, y: 11, color: "#12a594" },
     { x: 6, y: 11, color: "#6550b9" }, { x: 7, y: 11, color: "#6550b9" },
@@ -240,15 +266,16 @@ function TetrisCanvas({ active, onScoreChange }: GameCanvasProps) {
   useEffect(() => {
     const context = canvasRef.current && prepareCanvas(canvasRef.current);
     if (!context) return;
-    settled.forEach((point) => pixel(context, point, point.color));
-    cells().forEach((point) => pixel(context, point, PIECE_COLORS[pieceIndex]));
-  }, [cells, pieceIndex, settled]);
+    settled.forEach((point) => pixel(context, point, point.color, 1, reveal));
+    cells().forEach((point) => pixel(context, point, PIECE_COLORS[pieceIndex], 1, reveal));
+  }, [cells, pieceIndex, reveal, settled]);
 
   return <canvas ref={canvasRef} className="pl-canvas" role="img" aria-label="Interactive Tetris loader" />;
 }
 
 function PongCanvas({ active, accent, onScoreChange }: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const reveal = useGameReveal();
   const [playerY, setPlayerY] = useState(5);
   const [ball, setBall] = useState({ x: 6, y: 5, vx: 1, vy: 1 });
   const [score, setScore] = useState(0);
@@ -283,17 +310,18 @@ function PongCanvas({ active, accent, onScoreChange }: GameCanvasProps) {
   useEffect(() => {
     const context = canvasRef.current && prepareCanvas(canvasRef.current);
     if (!context) return;
-    [playerY - 1, playerY, playerY + 1].forEach((y) => pixel(context, { x: 0, y }, accent));
+    [playerY - 1, playerY, playerY + 1].forEach((y) => pixel(context, { x: 0, y }, accent, 1, reveal));
     const opponentY = Math.max(1, Math.min(10, Math.round(ball.y)));
-    [opponentY - 1, opponentY, opponentY + 1].forEach((y) => pixel(context, { x: 11, y }, "#6550b9"));
-    pixel(context, { x: Math.round(ball.x), y: Math.round(ball.y) }, "#e5484d", 0.72);
-  }, [accent, ball, playerY]);
+    [opponentY - 1, opponentY, opponentY + 1].forEach((y) => pixel(context, { x: 11, y }, "#6550b9", 1, reveal));
+    pixel(context, { x: Math.round(ball.x), y: Math.round(ball.y) }, "#e5484d", 1, reveal);
+  }, [accent, ball, playerY, reveal]);
 
   return <canvas ref={canvasRef} className="pl-canvas" role="img" aria-label="Interactive Pong loader" />;
 }
 
 function InvadersCanvas({ active, accent, onScoreChange }: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const reveal = useGameReveal();
   const [playerX, setPlayerX] = useState(5);
   const [invaders, setInvaders] = useState<Point[]>(() => (
     Array.from({ length: 12 }, (_, index) => ({ x: 2 + (index % 4) * 2, y: 1 + Math.floor(index / 4) * 2 }))
@@ -346,11 +374,11 @@ function InvadersCanvas({ active, accent, onScoreChange }: GameCanvasProps) {
     const context = canvasRef.current && prepareCanvas(canvasRef.current);
     if (!context) return;
     const colors = [accent, "#6550b9", "#e5484d"];
-    invaders.forEach((point, index) => pixel(context, { x: point.x + offset, y: point.y }, colors[index % colors.length], 0.78));
+    invaders.forEach((point, index) => pixel(context, { x: point.x + offset, y: point.y }, colors[index % colors.length], 1, reveal));
     [{ x: playerX, y: 11 }, { x: playerX + 1, y: 10 }, { x: playerX + 1, y: 11 }, { x: playerX + 2, y: 11 }]
-      .forEach((point) => pixel(context, point, accent));
-    if (shot) pixel(context, shot, "#16a36a", 0.36);
-  }, [accent, invaders, offset, playerX, shot]);
+      .forEach((point) => pixel(context, point, accent, 1, reveal));
+    if (shot) pixel(context, shot, "#16a36a", 0.5, reveal);
+  }, [accent, invaders, offset, playerX, reveal, shot]);
 
   return <canvas ref={canvasRef} className="pl-canvas" role="img" aria-label="Interactive Space Invaders loader" />;
 }
