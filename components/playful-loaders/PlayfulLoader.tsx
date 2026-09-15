@@ -30,10 +30,12 @@ type GameCanvasProps = {
   onScoreChange: (score: number) => void;
 };
 
-const SIZE = 360;
+// Match the portfolio canvases exactly. The CSS can scale the canvas down for
+// responsive previews, but its drawing grid keeps the original 768px geometry.
+const SIZE = 768;
 const GRID = 12;
-const PADDING = 24;
-const GAP = 4;
+const PADDING = SIZE * 0.07;
+const GAP = (SIZE - PADDING * 2) * 0.02;
 const CELL = (SIZE - PADDING * 2 - GAP * (GRID - 1)) / GRID;
 
 const GAME_LABELS: Record<LoaderGame, string> = {

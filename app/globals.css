@@ -133,11 +133,11 @@ h1 { margin: 0; font-size: clamp(56px, 8vw, 112px); line-height: .87; letter-spa
 .pl-splash {
   --pl-splash-surface: #eff6ff;
   --pl-splash-ink: #0d74ce;
-  --pl-grid-size: min(500px, calc(100% - 40px));
+  --pl-grid-size: min(768px, calc(100% - 32px), calc(100svh - 136px));
   position: relative;
   display: flex;
   width: 100%;
-  min-height: 640px;
+  min-height: calc(var(--pl-grid-size) + 96px);
   align-items: center;
   justify-content: center;
   overflow: hidden;
@@ -261,7 +261,7 @@ h2 { margin: 0; font-size: clamp(40px, 5.5vw, 76px); line-height: .98; letter-sp
   .game-tabs__list { height: auto; grid-template-columns: repeat(2, 1fr); }
   .game-tabs__trigger { min-height: 52px; border-bottom: 1px solid var(--pl-sand-3); }
   .game-tabs__content { min-height: 440px; }
-  .game-tabs__content .pl-splash { --pl-grid-size: min(370px, calc(100% - 16px)); min-height: 440px; }
+  .game-tabs__content .pl-splash { --pl-grid-size: min(768px, calc(100% - 24px), calc(100svh - 120px)); min-height: calc(var(--pl-grid-size) + 80px); }
   .pl-splash__score, .pl-splash__status { top: 14px; }
   .pl-splash__score { left: 4px; }
   .pl-splash__status { right: 4px; }
